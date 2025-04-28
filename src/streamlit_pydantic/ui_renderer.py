@@ -1,5 +1,6 @@
 import base64
 import contextlib
+import copy
 import dataclasses
 import datetime
 import inspect
@@ -828,7 +829,7 @@ class InputUI:
         if property.get("is_item"):
             streamlit_app.caption(title)
         else:
-            streamlit_app.subheader(title)
+            streamlit_app.caption(title)
         if property.get("description"):
             streamlit_app.markdown(property.get("description"))
 
@@ -851,32 +852,35 @@ class InputUI:
         value: Any,
         index: int,
         property: Dict[str, Any],
+        data_list: list
     ) -> Any:
         label = "Item #" + str(index + 1)
         new_key = self._key + "-" + parent_key + "." + str(index)
         item_placeholder = streamlit_app.empty()
 
         with item_placeholder:
-            input_col, button_col = streamlit_app.columns([8, 3])
+            # input_col, button_col = streamlit_app.columns([8, 3])
 
-            button_col.markdown("##")
 
             if self._remove_button_allowed(index, property):
                 remove = False
             else:
-                remove = button_col.button("Remove", key=new_key + "-remove")
+                remove = streamlit_app.button(f"Remove Item {str(index + 1)}", key=new_key + "-remove", use_container_width=True)
+                if remove:
+                    data_list.pop(index)
+                    self._store_value(parent_key, data_list)
+                    st.rerun()
 
             #  insert an input field when the remove button has not been clicked
             if not remove:
-                with input_col:
-                    new_property = {
-                        "title": label,
-                        "init_value": value if value else None,
-                        "is_item": True,
-                        "readOnly": property.get("readOnly"),
-                        **property["items"],
-                    }
-                    return self._render_property(streamlit_app, new_key, new_property)
+                new_property = {
+                    "title": label,
+                    "init_value": value if value else None,
+                    "is_item": True,
+                    "readOnly": property.get("readOnly"),
+                    **property["items"],
+                }
+                return self._render_property(streamlit_app, new_key, new_property)
 
             else:
                 # when the remove button is clicked clear the placeholder and return None
@@ -908,7 +912,7 @@ class InputUI:
             if self._remove_button_allowed(index, property):
                 remove = False
             else:
-                remove = button_col.button("Remove", key=new_key + "-remove")
+                remove = button_col.button("Remove", key=new_key + "-remove", use_container_width=True)
 
             if not remove:
                 with key_col:
@@ -974,12 +978,12 @@ class InputUI:
         return clear_allowed
 
     def _render_list_reset_button(self, key: str, streamlit_app: Any) -> None:
-        if streamlit_app.button("Reset List", key=self._key + "-" + key + "reset-button"):
+        if streamlit_app.button("Reset List", key=self._key + "-" + key + "reset-button", use_container_width=True):
             self._delete_value_from_state(key)
             st.rerun()
 
     def _render_dict_reset_button(self, key: str, streamlit_app: Any) -> None:
-        if streamlit_app.button("Reset Dictionary", key=self._key + "-" + key + "reset-button"):
+        if streamlit_app.button("Reset Dictionary", key=self._key + "-" + key + "reset-button", use_container_width=True):
             self._delete_value_from_state(key)
             st.rerun()
 
@@ -992,6 +996,7 @@ class InputUI:
         if streamlit_app.button(
             "Add Item",
             key=self._key + "-" + key + "list-add-item",
+            use_container_width=True
         ):
             data_list.append(None)
 
@@ -1006,6 +1011,7 @@ class InputUI:
         if streamlit_app.button(
             "Clear All",
             key=self._key + "_" + key + "-list_clear-all",
+            use_container_width=True
         ):
             data_list = []
 
@@ -1017,6 +1023,7 @@ class InputUI:
         if streamlit_app.button(
             "Add Item",
             key=self._key + "-" + key + "-add-item",
+            use_container_width=True
         ):
             data_dict[str(len(data_dict) + 1)] = None
 
@@ -1031,6 +1038,7 @@ class InputUI:
         if streamlit_app.button(
             "Clear All",
             key=self._key + "-" + key + "-clear-all",
+            use_container_width=True
         ):
             data_dict = {}
 
@@ -1038,9 +1046,10 @@ class InputUI:
 
     def _render_list_input(self, streamlit_app: Any, key: str, property: Dict) -> Any:
         # Add title and subheader
-        streamlit_app.subheader(property.get("title"))
+        container =  streamlit_app.container(border = True)
+        container.caption(property.get("title"))
         if property.get("description"):
-            streamlit_app.markdown(property.get("description"))
+            container.markdown(property.get("description"))
 
         is_object = True if property["items"].get("$ref") else False
 
@@ -1056,7 +1065,7 @@ class InputUI:
         else:
             data_list = []
 
-        add_col, clear_col, reset_col = streamlit_app.columns(3)
+        add_col, clear_col, reset_col = container.columns(3)
 
         add_col = add_col.empty()
 
@@ -1067,13 +1076,14 @@ class InputUI:
             data_list = self._render_list_clear_button(key, clear_col, data_list)
 
         if len(data_list) > 0:
-            for index, item in enumerate(data_list):
+            for index, item in enumerate(copy.deepcopy(data_list)):
                 output = self._render_list_item(
-                    streamlit_app,
+                    container,
                     key,
                     item,
                     index,
                     property,
+                    data_list
                 )
                 if output is not None:
                     object_list.append(output)
@@ -1085,7 +1095,7 @@ class InputUI:
                 add_col = add_col.empty()
 
             if not is_object:
-                streamlit_app.markdown("---")
+                container.markdown("---")
 
         return object_list
 
