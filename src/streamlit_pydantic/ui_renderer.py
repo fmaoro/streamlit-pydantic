@@ -324,6 +324,9 @@ class InputUI:
             state = state[key_element]
         return None
 
+    def _delete_value_from_state(self, key: str)-> None:
+        del self._session_state[self._session_input_key][key]
+
     def _store_value(self, key: str, value: Any) -> None:
         return self._store_value_in_state(
             self._session_state[self._session_input_key], key, value
@@ -598,7 +601,7 @@ class InputUI:
         if self._clear_button_allowed(property):
             data_dict = self._render_dict_clear_button(key, clear_col, data_dict)
 
-        self._render_reset_button(key, reset_col)
+        self._render_dict_reset_button(key, reset_col)
 
         new_dict = {}
 
@@ -970,9 +973,15 @@ class InputUI:
 
         return clear_allowed
 
-    def _render_reset_button(self, key: str, streamlit_app: Any) -> None:
-        if streamlit_app.button("Reset Item", key=self._key + "-" + key + "list-reset-item"):
-            del st.session_state[key]
+    def _render_list_reset_button(self, key: str, streamlit_app: Any) -> None:
+        if streamlit_app.button("Reset List", key=self._key + "-" + key + "reset-button"):
+            self._delete_value_from_state(key)
+            st.rerun()
+
+    def _render_dict_reset_button(self, key: str, streamlit_app: Any) -> None:
+        if streamlit_app.button("Reset Dictionary", key=self._key + "-" + key + "reset-button"):
+            self._delete_value_from_state(key)
+            st.rerun()
 
     def _render_list_add_button(
         self,
@@ -1052,7 +1061,7 @@ class InputUI:
         add_col = add_col.empty()
 
         self._render_list_add_button(key, add_col, data_list)
-        self._render_reset_button(key, reset_col)
+        self._render_list_reset_button(key, reset_col)
 
         if self._clear_button_allowed(property):
             data_list = self._render_list_clear_button(key, clear_col, data_list)
