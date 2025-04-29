@@ -689,7 +689,6 @@ class InputUI:
             streamlit_app, key, name_reference_mapping[selected_reference]
         )
 
-        streamlit_app.markdown("---")
         return input_data
 
     def _render_multi_file_input(
@@ -833,6 +832,7 @@ class InputUI:
         if property.get("description"):
             streamlit_app.markdown(property.get("description"))
 
+        container = streamlit_app.container(border=True)
         object_reference = schema_utils.get_single_reference_item(
             property, self._schema_references
         )
@@ -843,7 +843,7 @@ class InputUI:
 
         object_reference["readOnly"] = property.get("readOnly", None)
 
-        return self._render_object_input(streamlit_app, key, object_reference)
+        return self._render_object_input(container, key, object_reference)
 
     def _render_list_item(
         self,
@@ -1046,8 +1046,8 @@ class InputUI:
 
     def _render_list_input(self, streamlit_app: Any, key: str, property: Dict) -> Any:
         # Add title and subheader
+        streamlit_app.caption(property.get("title"))
         container =  streamlit_app.container(border = True)
-        container.caption(property.get("title"))
         if property.get("description"):
             container.markdown(property.get("description"))
 
@@ -1088,14 +1088,8 @@ class InputUI:
                 if output is not None:
                     object_list.append(output)
 
-                if is_object:
-                    streamlit_app.markdown("---")
-
             if not self._add_button_allowed(len(object_list), property):
                 add_col = add_col.empty()
-
-            if not is_object:
-                container.markdown("---")
 
         return object_list
 
