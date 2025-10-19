@@ -180,6 +180,50 @@ def is_union_property(property: Dict) -> bool:
 
     return True
 
+def is_union_of_list_and_dict(property: Dict) -> bool:
+    union_prop = property.get("anyOf")
+
+    if union_prop is None:
+        return False
+
+    if len(union_prop) == 0:  # type: ignore
+        return False
+
+    discriminated = False
+    has_array = False
+    has_dict = False
+
+    for reference in union_prop:
+        if (
+            reference.get("oneOf") is not None
+            or reference.get("discriminated") is not None
+        ):
+            discriminated = True
+            for discriminated_reference in reference.get("oneOf"):  # type: ignore
+                if not is_single_reference(discriminated_reference):
+                    return False
+        if reference.get("type") == "array":
+            has_array = True
+        if reference.get("type") == "object":
+            has_dict = True
+
+    if has_array and has_dict:
+        return True
+    return False
+
+def get_list_of_list_and_dict(property: Dict) -> Dict:
+    new_property = {}
+    any_of_list = property["anyOf"]
+    for item in any_of_list:
+        if item["type"] == "array":
+            new_property = item
+
+    new_property["title"] = property["title"]
+    if property.get("init_value"):
+        new_property["init_value"] = property.get("init_value")
+    if property.get("instance_class"):
+        new_property["instance_class"] = property.get("instance_class")
+    return new_property
 
 def is_property_list(property: Dict) -> bool:
     if property.get("type") != "array":

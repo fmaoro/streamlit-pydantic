@@ -1147,6 +1147,11 @@ class InputUI:
 
         if schema_utils.is_union_property(property):
             return self._render_union_property(streamlit_app, key, property)
+
+        if schema_utils.is_union_of_list_and_dict(property):
+            new_property = schema_utils.get_list_of_list_and_dict(property)
+            return self._render_list_input(streamlit_app, key, new_property)
+
         streamlit_app.warning(
             "The type of the following property is currently not supported: "
             + str(property.get("title"))
