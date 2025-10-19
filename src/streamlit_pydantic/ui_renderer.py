@@ -240,7 +240,14 @@ class InputUI:
                 error_text = "**Input failed validation:**"
                 for error in ex.errors():
                     if "loc" in error and "msg" in error:
-                        location = ".".join(error["loc"]).replace("__root__.", "")  # type: ignore
+                        loc = error["loc"]
+                        location = ""
+                        for i, loc_item in enumerate(loc):
+                            if i != 0:
+                                location += "."
+                            location += str(loc_item)
+
+                        location = location.replace("__root__.", "")  # type: ignore
                         error_msg = f"**{location}:** " + error["msg"]
                         error_text += "\n\n" + error_msg
                     else:
